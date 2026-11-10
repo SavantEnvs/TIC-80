@@ -1,0 +1,10 @@
+# Bake the full repo (with .git) into the image; drop only local build outputs and noise.
+# Upstream tracks a top-level build/ directory, so it is NOT excluded here.
+mayhem/build-fuzz/
+mayhem/build-test/
+*.o
+*.a
+**/__pycache__/
+.DS_Store
+*.swp
+*~

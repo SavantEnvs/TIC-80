@@ -1,0 +1,945 @@
+// API conformance probes for squirrel — the same sections as lua.lua, in the
+// same order; that file is the reference and carries the protocol notes.
+//
+// probe(id, f) traces the marker, then runs f. The runner records every API
+// call with the values it arrived with; a call the language refuses ends the
+// probe with "!error" — the refusal is a finding of its own. Every literal is
+// double-quoted: squirrel's 'c' is a character constant, and 'ab' does not
+// compile.
+
+function probe(id, f) {
+    trace("#" + id);
+
+    local name = id.slice(0, id.find("/"));
+    local fn = name in getroottable() ? getroottable()[name] : null;
+
+    if (typeof fn != "function") {
+        trace("!missing");
+        return;
+    }
+
+    try { f(); }
+    catch (e) { trace("!error"); }
+}
+
+// ---- cls
+
+probe("cls/default", function() {
+    pix(10, 10, 4);
+    cls();
+    pix(10, 10);
+});
+
+probe("cls/color", function() {
+    cls(7);
+    pix(4, 4);
+    pix(235, 131);
+});
+
+probe("cls/wrong-type", function() {
+    cls(6);
+    cls("x");
+    pix(0, 0);
+});
+
+probe("cls/out-of-range", function() {
+    pix(0, 0, 6);
+    cls(99);
+    pix(0, 0);
+});
+
+// ---- print
+
+probe("print/width", function() {
+    print("A", 5, 5, 15);
+});
+
+probe("print/defaults", function() {
+    print("A");
+});
+
+probe("print/scale", function() {
+    print("A", 5, 5, 15, false, 2);
+});
+
+probe("print/fixed", function() {
+    print("ii", 0, 0, 15, true);
+    print("ww", 0, 10, 15, true);
+});
+
+probe("print/no-args", function() {
+    print();
+    trace("done");
+});
+
+// ---- pix
+
+probe("pix/write", function() {
+    cls(0);
+    pix(10, 10, 4);
+    pix(10, 10);
+});
+
+probe("pix/read", function() {
+    cls(2);
+    pix(3, 4);
+});
+
+probe("pix/missing-y", function() {
+    cls(5);
+    pix(1);
+    pix(1, 0);
+    pix(0, 0);
+});
+
+probe("pix/no-args", function() {
+    cls(3);
+    pix();
+    pix(0, 0);
+});
+
+probe("pix/float-coords", function() {
+    cls(0);
+    pix(10.7, 11.7, 4);
+    pix(10, 11);
+    pix(11, 11);
+    pix(10, 12);
+});
+
+probe("pix/string-arg", function() {
+    cls(0);
+    pix("1", 2, 4);
+    pix(1, 2);
+});
+
+probe("pix/out-of-bounds", function() {
+    pix(300, 300, 4);
+    pix(300, 300);
+});
+
+// ---- line
+
+probe("line/diagonal", function() {
+    cls(0);
+    line(0, 0, 5, 5, 6);
+    pix(0, 0);
+    pix(3, 3);
+    pix(5, 5);
+    pix(5, 0);
+});
+
+probe("line/floats", function() {
+    cls(0);
+    line(0.4, 1.6, 5.4, 1.6, 6);
+    pix(0, 1);
+    pix(0, 2);
+    pix(5, 1);
+    pix(5, 2);
+});
+
+probe("line/missing-color", function() {
+    cls(0);
+    line(0, 0, 5, 5);
+    pix(0, 0);
+});
+
+probe("line/one-point", function() {
+    cls(0);
+    line(3, 3, 3, 3, 6);
+    pix(3, 3);
+});
+
+// ---- rect
+
+probe("rect/fill", function() {
+    cls(0);
+    rect(1, 1, 3, 3, 6);
+    pix(1, 1);
+    pix(3, 3);
+    pix(4, 4);
+    pix(0, 0);
+});
+
+probe("rect/zero-size", function() {
+    cls(0);
+    rect(5, 5, 0, 0, 6);
+    pix(5, 5);
+});
+
+probe("rect/negative-size", function() {
+    cls(0);
+    rect(5, 5, -2, -2, 6);
+    pix(5, 5);
+    pix(4, 4);
+    pix(3, 3);
+});
+
+probe("rect/missing-color", function() {
+    cls(0);
+    rect(1, 1, 2, 2);
+    pix(1, 1);
+});
+
+// ---- rectb
+
+probe("rectb/border", function() {
+    cls(0);
+    rectb(1, 1, 4, 4, 6);
+    pix(1, 1);
+    pix(2, 2);
+    pix(4, 4);
+    pix(5, 5);
+});
+
+probe("rectb/zero-size", function() {
+    cls(0);
+    rectb(5, 5, 0, 0, 6);
+    pix(5, 5);
+});
+
+probe("rectb/one-wide", function() {
+    cls(0);
+    rectb(2, 2, 1, 1, 6);
+    pix(2, 2);
+    pix(3, 3);
+});
+
+probe("rectb/missing-color", function() {
+    cls(0);
+    rectb(1, 1, 2, 2);
+    pix(1, 1);
+});
+
+// ---- rrect
+
+probe("rrect/fill", function() {
+    cls(0);
+    rrect(10, 10, 20, 20, 6, 4);
+    pix(20, 20);
+    pix(10, 20);
+    pix(14, 10);
+    pix(10, 10);
+});
+
+probe("rrect/zero-radius", function() {
+    cls(0);
+    rrect(10, 10, 20, 20, 6, 0);
+    pix(10, 10);
+    pix(29, 29);
+    pix(30, 30);
+});
+
+probe("rrect/exponent", function() {
+    cls(0);
+    rrect(10, 10, 20, 20, 6, 4, 4);
+    pix(12, 10);
+    pix(11, 10);
+    pix(10, 11);
+    pix(10, 12);
+});
+
+probe("rrect/missing-radius", function() {
+    cls(0);
+    rrect(10, 10, 20, 20, 6);
+    pix(10, 10);
+});
+
+// ---- rrectb
+
+probe("rrectb/border", function() {
+    cls(0);
+    rrectb(10, 10, 20, 20, 6, 4);
+    pix(10, 20);
+    pix(20, 10);
+    pix(20, 20);
+    pix(10, 10);
+});
+
+probe("rrectb/zero-radius", function() {
+    cls(0);
+    rrectb(10, 10, 20, 20, 6, 0);
+    pix(10, 10);
+    pix(29, 10);
+    pix(20, 20);
+});
+
+probe("rrectb/exponent", function() {
+    cls(0);
+    rrectb(10, 10, 20, 20, 6, 4, 4);
+    pix(11, 10);
+    pix(12, 11);
+    pix(10, 11);
+    pix(12, 10);
+});
+
+probe("rrectb/missing-radius", function() {
+    cls(0);
+    rrectb(10, 10, 20, 20, 6);
+    pix(10, 10);
+});
+
+// ---- mget
+
+probe("mget/zero", function() {
+    mget(0, 0);
+});
+
+probe("mget/missing-y", function() {
+    mget(3);
+});
+
+probe("mget/string-arg", function() {
+    mget("x", 0);
+});
+
+// ---- mset
+
+probe("mset/basic", function() {
+    mset(1, 2, 7);
+    mget(1, 2);
+});
+
+probe("mset/out-of-range-tile", function() {
+    mset(5, 5, 999);
+    mget(5, 5);
+});
+
+probe("mset/missing-tile", function() {
+    mset(6, 6, 7);
+    mset(6, 6);
+    mget(6, 6);
+});
+
+// ---- peek
+
+probe("peek/zero", function() {
+    poke(8, 0);
+    peek(8);
+});
+
+probe("peek/missing-addr", function() {
+    peek();
+});
+
+probe("peek/out-of-bounds", function() {
+    peek(1000000);
+});
+
+probe("peek/negative-addr", function() {
+    peek(-1);
+});
+
+// ---- poke
+
+probe("poke/byte", function() {
+    poke(8, 42);
+    peek(8);
+});
+
+probe("poke/nibble", function() {
+    poke(32, 9, 4);
+    peek(32, 4);
+});
+
+probe("poke/missing-value", function() {
+    poke(40, 7);
+    poke(40);
+    peek(40);
+});
+
+probe("poke/out-of-bounds", function() {
+    poke(1000000, 1);
+});
+
+// ---- trace
+
+probe("trace/basic", function() {
+    trace("hello");
+});
+
+probe("trace/color", function() {
+    trace("hello", 5);
+});
+
+// ---- spr
+
+probe("spr/basic", function() {
+    cls(0);
+    spr(1, 10, 10);
+    pix(10, 10);
+});
+
+probe("spr/colorkey", function() {
+    cls(0);
+    spr(1, 20, 20, 4);
+    pix(20, 20);
+});
+
+probe("spr/scale", function() {
+    cls(0);
+    spr(1, 30, 30, -1, 2);
+    pix(30, 30);
+});
+
+probe("spr/flip-rotate", function() {
+    cls(0);
+    spr(1, 40, 40, -1, 1, 3, 2);
+    pix(40, 40);
+});
+
+// ---- map
+
+probe("map/defaults", function() {
+    cls(0);
+    map();
+    pix(0, 0);
+});
+
+probe("map/size", function() {
+    cls(0);
+    map(0, 0, 4, 4);
+    pix(0, 0);
+});
+
+probe("map/scale", function() {
+    cls(0);
+    map(0, 0, 4, 4, 0, 0, -1, 2);
+    pix(0, 0);
+});
+
+// ---- btn
+
+probe("btn/pressed", function() {
+    btn(0);
+    btn(4);
+});
+
+probe("btn/missing-id", function() {
+    btn();
+});
+
+// ---- btnp
+
+probe("btnp/pressed", function() {
+    btnp(0);
+});
+
+probe("btnp/hold-period", function() {
+    btnp(0, 10, 5);
+});
+
+// ---- btnr
+
+probe("btnr/released", function() {
+    btnr(0);
+});
+
+probe("btnr/missing-id", function() {
+    btnr();
+});
+
+// ---- key
+
+probe("key/no-key", function() {
+    key();
+});
+
+probe("key/code", function() {
+    key(1);
+});
+
+// ---- keyp
+
+probe("keyp/no-key", function() {
+    keyp();
+});
+
+probe("keyp/hold-period", function() {
+    keyp(1, 10, 5);
+});
+
+// ---- keyr
+
+probe("keyr/no-key", function() {
+    keyr();
+});
+
+probe("keyr/code", function() {
+    keyr(1);
+});
+
+// ---- mouse
+
+probe("mouse/idle", function() {
+    mouse();
+});
+
+// ---- circ
+
+probe("circ/fill", function() {
+    cls(0);
+    circ(20, 20, 5, 6);
+    pix(20, 20);
+    pix(25, 20);
+});
+
+probe("circ/zero-radius", function() {
+    cls(0);
+    circ(30, 30, 0, 6);
+    pix(30, 30);
+});
+
+// ---- circb
+
+probe("circb/border", function() {
+    cls(0);
+    circb(20, 20, 5, 6);
+    pix(20, 20);
+    pix(25, 20);
+});
+
+probe("circb/missing-color", function() {
+    cls(0);
+    circb(20, 20, 5);
+    pix(25, 20);
+});
+
+// ---- elli
+
+probe("elli/fill", function() {
+    cls(0);
+    elli(40, 40, 6, 3, 6);
+    pix(40, 40);
+    pix(46, 40);
+});
+
+probe("elli/zero-radius", function() {
+    cls(0);
+    elli(40, 40, 0, 0, 6);
+    pix(40, 40);
+});
+
+// ---- ellib
+
+probe("ellib/border", function() {
+    cls(0);
+    ellib(40, 40, 6, 3, 6);
+    pix(40, 40);
+    pix(46, 40);
+});
+
+probe("ellib/missing-color", function() {
+    cls(0);
+    ellib(40, 40, 6, 3);
+    pix(46, 40);
+});
+
+// ---- paint
+
+probe("paint/fill", function() {
+    cls(0);
+    paint(5, 5, 6);
+    pix(0, 0);
+    pix(239, 135);
+});
+
+probe("paint/missing-color", function() {
+    cls(0);
+    paint(5, 5);
+    pix(0, 0);
+});
+
+// ---- tri
+
+probe("tri/fill", function() {
+    cls(0);
+    tri(0, 0, 10, 0, 0, 10, 6);
+    pix(0, 0);
+    pix(5, 0);
+    pix(10, 10);
+});
+
+probe("tri/missing-color", function() {
+    cls(0);
+    tri(0, 0, 10, 0, 0, 10);
+    pix(0, 0);
+});
+
+// ---- trib
+
+probe("trib/border", function() {
+    cls(0);
+    trib(0, 0, 10, 0, 0, 10, 6);
+    pix(0, 0);
+    pix(5, 0);
+});
+
+probe("trib/missing-color", function() {
+    cls(0);
+    trib(0, 0, 10, 0, 0, 10);
+    pix(0, 0);
+});
+
+// ---- ttri
+
+probe("ttri/basic", function() {
+    cls(0);
+    ttri(0, 0, 10, 0, 0, 10, 0, 0, 1, 0, 0, 1);
+    pix(0, 0);
+    pix(5, 0);
+});
+
+probe("ttri/chromakey", function() {
+    cls(0);
+    ttri(0, 0, 10, 0, 0, 10, 0, 0, 1, 0, 0, 1, 0, 4);
+    pix(0, 0);
+});
+
+// ---- clip
+
+probe("clip/set", function() {
+    cls(0);
+    clip(2, 2, 5, 5);
+    rect(0, 0, 10, 10, 6);
+    pix(0, 0);
+    pix(2, 2);
+    clip();
+});
+
+probe("clip/reset", function() {
+    cls(0);
+    clip();
+    rect(0, 0, 2, 2, 6);
+    pix(0, 0);
+});
+
+// ---- font
+
+probe("font/text", function() {
+    cls(0);
+    font("ab", 0, 0, -1, 6, 6);
+    pix(0, 0);
+});
+
+// ---- sfx
+
+probe("sfx/basic", function() {
+    sfx(0);
+});
+
+probe("sfx/note", function() {
+    sfx(0, 48);
+});
+
+probe("sfx/channel", function() {
+    sfx(0, 48, -1, 1);
+});
+
+probe("sfx/missing-id", function() {
+    sfx();
+});
+
+// ---- music
+
+probe("music/basic", function() {
+    music(0);
+});
+
+probe("music/frame", function() {
+    music(0, 0, 0, true, false);
+});
+
+// ---- fget
+
+probe("fget/out-of-range", function() {
+    fget(500, 0);
+});
+
+// ---- fset
+
+probe("fset/roundtrip", function() {
+    fset(0, 0, true);
+    fget(0, 0);
+});
+
+probe("fset/missing-bool", function() {
+    fset(0, 1);
+    fget(0, 1);
+});
+
+// ---- peek1
+
+probe("peek1/read", function() {
+    peek1(16);
+});
+
+// ---- poke1
+
+probe("poke1/roundtrip", function() {
+    poke1(16, 7);
+    peek1(16);
+});
+
+// ---- peek2
+
+probe("peek2/read", function() {
+    peek2(24);
+});
+
+// ---- poke2
+
+probe("poke2/roundtrip", function() {
+    poke2(24, 300);
+    peek2(24);
+});
+
+// ---- peek4
+
+probe("peek4/read", function() {
+    peek4(64);
+});
+
+// ---- poke4
+
+probe("poke4/roundtrip", function() {
+    poke4(64, 9);
+    peek4(64);
+});
+
+// ---- memset
+
+probe("memset/bytes", function() {
+    memset(48, 7, 2);
+    peek(48);
+    peek(49);
+});
+
+// ---- memcpy
+
+probe("memcpy/copy", function() {
+    poke(56, 1);
+    poke(57, 2);
+    memcpy(60, 56, 2);
+    peek(60);
+    peek(61);
+});
+
+// ---- pmem
+
+probe("pmem/read", function() {
+    pmem(0);
+});
+
+probe("pmem/write-read", function() {
+    pmem(0, 42);
+    pmem(0);
+});
+
+probe("pmem/out-of-range", function() {
+    pmem(1000);
+});
+
+// ---- time
+
+probe("time/stub", function() {
+    time();
+});
+
+// ---- tstamp
+
+probe("tstamp/stub", function() {
+    tstamp();
+});
+
+// ---- fft
+
+probe("fft/sample", function() {
+    fft(0);
+});
+
+// ---- ffts
+
+probe("ffts/spectrum", function() {
+    ffts(0);
+});
+
+// ---- fftr
+
+probe("fftr/range", function() {
+    fftr(0, 100);
+});
+
+// ---- fftrs
+
+probe("fftrs/range", function() {
+    fftrs(0, 100);
+});
+
+// ---- vqt
+
+probe("vqt/read", function() {
+    vqt(0);
+});
+
+// ---- vqts
+
+probe("vqts/read", function() {
+    vqts(0);
+});
+
+// ---- vqtr
+
+probe("vqtr/read", function() {
+    vqtr(0);
+});
+
+// ---- vqtrs
+
+probe("vqtrs/read", function() {
+    vqtrs(0);
+});
+
+// ---- vqtw
+
+probe("vqtw/read", function() {
+    vqtw(0);
+});
+
+// ---- vqtsw
+
+probe("vqtsw/read", function() {
+    vqtsw(0);
+});
+
+// ---- vqtrw
+
+probe("vqtrw/read", function() {
+    vqtrw(0);
+});
+
+// ---- vqtrsw
+
+probe("vqtrsw/read", function() {
+    vqtrsw(0);
+});
+
+// ---- vbank
+
+probe("vbank/switch", function() {
+    vbank(1);
+    vbank(0);
+});
+
+probe("vbank/no-args", function() {
+    vbank();
+    trace("done");
+});
+
+// ---- sync
+
+probe("sync/defaults", function() {
+    sync();
+});
+
+probe("sync/mask", function() {
+    sync(32767, 0, false);
+});
+
+// ---- exit
+
+probe("exit/call", function() {
+    exit();
+});
+
+// ---- reset
+
+probe("reset/call", function() {
+    reset();
+    trace("done");
+});
+
+// The engine runs a cart's TIC every tick; the probes live at the top level.
+function TIC() {}
+
+// <TILES>
+// 000:10e0b1825324f4c596673809d9aa7b4c1dedbe8f5021f1c293643506d6a77849
+// 001:1aeabb8c5d2efecf90613203d3a4754617e7b8895a2bfbcc9d6e3f00d0a17243
+// 002:14e4b5865728f8c99a6b3c0dddae7f4011e1b2835425f5c69768390adaab7c4d
+// 003:1eeebf805122f2c394653607d7a8794a1bebbc8d5e2fffc091623304d4a57647
+// 004:18e8b98a5b2cfccd9e6f3001d1a2734415e5b6875829f9ca9b6c3d0edeaf7041
+// 005:12e2b3845526f6c798693a0bdbac7d4e1fefb0815223f3c495663708d8a97a4b
+// 006:1cecbd8e5f20f0c192633405d5a6774819e9ba8b5c2dfdce9f603102d2a37445
+// 007:16e6b788592afacb9c6d3e0fdfa0714213e3b4855627f7c8996a3b0cdcad7e4f
+// 008:10e0b1825324f4c596673809d9aa7b4c1dedbe8f5021f1c293643506d6a77849
+// 009:1aeabb8c5d2efecf90613203d3a4754617e7b8895a2bfbcc9d6e3f00d0a17243
+// 010:14e4b5865728f8c99a6b3c0dddae7f4011e1b2835425f5c69768390adaab7c4d
+// 011:1eeebf805122f2c394653607d7a8794a1bebbc8d5e2fffc091623304d4a57647
+// 012:18e8b98a5b2cfccd9e6f3001d1a2734415e5b6875829f9ca9b6c3d0edeaf7041
+// 013:12e2b3845526f6c798693a0bdbac7d4e1fefb0815223f3c495663708d8a97a4b
+// 014:1cecbd8e5f20f0c192633405d5a6774819e9ba8b5c2dfdce9f603102d2a37445
+// 015:16e6b788592afacb9c6d3e0fdfa0714213e3b4855627f7c8996a3b0cdcad7e4f
+// </TILES>
+
+// <SPRITES>
+// 000:30a01181f162d243b324940575e556c637a71888f869d94aba2b9b0c7cec5dcd
+// 001:3eae1f8fff60d041b122920373e354c435a51686f667d748b829990a7aea5bcb
+// 002:3cac1d8dfd6ede4fbf20900171e152c233a31484f465d546b627970878e859c9
+// 003:3aaa1b8bfb6cdc4dbd2e9e0f7fef50c031a11282f263d344b425950676e657c7
+// 004:38a81989f96ada4bbb2c9c0d7ded5ece3faf1080f061d142b223930474e455c5
+// 005:36a61787f768d849b92a9a0b7beb5ccc3dad1e8efe6fdf40b021910272e253c3
+// 006:34a41585f566d647b728980979e95aca3bab1c8cfc6ddd4ebe2f9f0070e051c1
+// 007:32a21383f364d445b526960777e758c839a91a8afa6bdb4cbc2d9d0e7eee5fcf
+// 008:30a01181f162d243b324940575e556c637a71888f869d94aba2b9b0c7cec5dcd
+// 009:3eae1f8fff60d041b122920373e354c435a51686f667d748b829990a7aea5bcb
+// 010:3cac1d8dfd6ede4fbf20900171e152c233a31484f465d546b627970878e859c9
+// 011:3aaa1b8bfb6cdc4dbd2e9e0f7fef50c031a11282f263d344b425950676e657c7
+// 012:38a81989f96ada4bbb2c9c0d7ded5ece3faf1080f061d142b223930474e455c5
+// 013:36a61787f768d849b92a9a0b7beb5ccc3dad1e8efe6fdf40b021910272e253c3
+// 014:34a41585f566d647b728980979e95aca3bab1c8cfc6ddd4ebe2f9f0070e051c1
+// 015:32a21383f364d445b526960777e758c839a91a8afa6bdb4cbc2d9d0e7eee5fcf
+// </SPRITES>
+
+// <MAP>
+// 000:0050a0f04191e13282d22373c31464b40555a5f54696e63787d72878c81969b90a5aaafa4b9beb3c8cdc2d7dcd1e6ebe0f5fafff4090e03181d12272c21363b30454a4f44595e53686d62777c71868b80959a9f94a9aea3b8bdb2c7ccc1d6dbd0e5eaefe4f9fef3080d02171c11262b20353a3f34494e43585d52676c61767b70858a8f84999e93a8ada2b7bcb1c6cbc0d5dadfd4e9eee3f8fdf2070c01161b10252a2f24393e33484d42575c51666b60757a7f74898e83989d92a7aca1b6bbb0c5cacfc4d9ded3e8ede2f7fcf1060b00151a1f14292e23383d32474c41565b50656a6f64797e73888d82979c91a6aba
+// 001:0b5babfb4c9cec3d8ddd2e7ece1f6fbf0050a0f04191e13282d22373c31464b40555a5f54696e63787d72878c81969b90a5aaafa4b9beb3c8cdc2d7dcd1e6ebe0f5fafff4090e03181d12272c21363b30454a4f44595e53686d62777c71868b80959a9f94a9aea3b8bdb2c7ccc1d6dbd0e5eaefe4f9fef3080d02171c11262b20353a3f34494e43585d52676c61767b70858a8f84999e93a8ada2b7bcb1c6cbc0d5dadfd4e9eee3f8fdf2070c01161b10252a2f24393e33484d42575c51666b60757a7f74898e83989d92a7aca1b6bbb0c5cacfc4d9ded3e8ede2f7fcf1060b00151a1f14292e23383d32474c41565b5
+// 002:0656a6f64797e73888d82979c91a6aba0b5babfb4c9cec3d8ddd2e7ece1f6fbf0050a0f04191e13282d22373c31464b40555a5f54696e63787d72878c81969b90a5aaafa4b9beb3c8cdc2d7dcd1e6ebe0f5fafff4090e03181d12272c21363b30454a4f44595e53686d62777c71868b80959a9f94a9aea3b8bdb2c7ccc1d6dbd0e5eaefe4f9fef3080d02171c11262b20353a3f34494e43585d52676c61767b70858a8f84999e93a8ada2b7bcb1c6cbc0d5dadfd4e9eee3f8fdf2070c01161b10252a2f24393e33484d42575c51666b60757a7f74898e83989d92a7aca1b6bbb0c5cacfc4d9ded3e8ede2f7fcf1060b0
+// 003:0151a1f14292e23383d32474c41565b50656a6f64797e73888d82979c91a6aba0b5babfb4c9cec3d8ddd2e7ece1f6fbf0050a0f04191e13282d22373c31464b40555a5f54696e63787d72878c81969b90a5aaafa4b9beb3c8cdc2d7dcd1e6ebe0f5fafff4090e03181d12272c21363b30454a4f44595e53686d62777c71868b80959a9f94a9aea3b8bdb2c7ccc1d6dbd0e5eaefe4f9fef3080d02171c11262b20353a3f34494e43585d52676c61767b70858a8f84999e93a8ada2b7bcb1c6cbc0d5dadfd4e9eee3f8fdf2070c01161b10252a2f24393e33484d42575c51666b60757a7f74898e83989d92a7aca1b6bbb
+// </MAP>
+
+// <WAVES>
+// 000:90c0f0215181b1e1124272a2d2033363
+// 001:93c3f3245484b4e4154575a5d5063666
+// 002:96c6f6275787b7e7184878a8d8093969
+// 003:99c9f92a5a8abaea1b4b7babdb0c3c6c
+// 004:9cccfc2d5d8dbded1e4e7eaede0f3f6f
+// 005:9fcfff205080b0e0114171a1d1023262
+// 006:92c2f2235383b3e3144474a4d4053565
+// 007:95c5f5265686b6e6174777a7d7083868
+// 008:98c8f8295989b9e91a4a7aaada0b3b6b
+// 009:9bcbfb2c5c8cbcec1d4d7daddd0e3e6e
+// 010:9ecefe2f5f8fbfef104070a0d0013161
+// 011:91c1f1225282b2e2134373a3d3043464
+// 012:94c4f4255585b5e5164676a6d6073767
+// 013:97c7f7285888b8e8194979a9d90a3a6a
+// 014:9acafa2b5b8bbbeb1c4c7cacdc0d3d6d
+// 015:9dcdfd2e5e8ebeee1f4f7fafdf003060
+// </WAVES>
+
+// <PATTERNS>
+// 000:20d08132e29344f4a55607b76819c97a2bdb8c3ded9e4fffa05102b26314c47526d68738e8994afaab5c0dbd6e1fcf7021d18233e39445f5a65708b8691aca7b2cdc8d3eee9f40f0a15203b36415c57627d78839e99a4bfbac5d0ebe6f10c07122d28334e49546f6a75809b96a1bcb7c2ddd8e3fef9041f1a25304b46516c67728d8893aea9b4cfcad5e0fbf6011c17223d38435e59647f7a8590aba6b1ccc7d2ede8f30e09142f2a35405b56617c77829d98a3beb9c4dfdae5f00b06112c273
+// 001:24d48536e69748f800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+// </PATTERNS>
+
+// <FLAGS>
+// 000:00102030405060708090a0b0c0d0e0f001112131415161718191a1b1c1d1e1f102122232425262728292a2b2c2d2e2f203132333435363738393a3b3c3d3e3f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+// </FLAGS>
+
+// <PALETTE>
+// 000:0b30557a9fc4e90e33587da2c7ec11365b80a5caef14395e83a8cdf2173c6186abd0f51a3f6489aed3f81d42678cb1d6
+// 001:fb20456a8fb4d9fe23486d92b7dc01264b7095badf04294e7398bde2072c51769bc0e50a2f54799ec3e80d32577ca1c6
+// </PALETTE>
+
+// <LANG>
+// 000:0f
+// </LANG>
+

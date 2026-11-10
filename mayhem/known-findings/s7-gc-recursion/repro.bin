@@ -1,0 +1,175 @@
+;; API conformance probes for scheme (s7) â€” the same sections as lua.lua, in
+;; the same order; that file is the reference and carries the protocol notes.
+;;
+;; The api lives under t80::, so every call is (t80::name ...); the prelude
+;; traces the marker and runs each body under catch, which with #t takes any
+;; error the binding raises. There is no existence check, as in janet: a name
+;; the binding lacked would be caught and read as a refusal, not as !missing â€”
+;; no api is missing today.
+
+(define (probe id f)
+  (t80::trace (string-append "#" id))
+  (catch #t
+    (lambda () (f))
+    (lambda (tag info) (t80::trace "!error")9))
+
+;; ---- cls
+
+(probe "cls/default" (lambda ()
+  (t80::pix 10 10 4)
+  (t80::cls)
+  (t80::pix 10 10)
+  ))
+
+(probe "cls/color" (lambda ()
+  (t80::cls 7)
+  (t80::pix 4 4)
+  (t80::pix 235 131)
+  ))
+
+(probe "cls/wrong-type" (lambda ()
+  (t80::cls 6)
+  (t80::cls "x")
+  (t80::pix 0 0)
+  ))
+
+(probe "cls/out-of-range" (lambda ()
+  (t80::pix 0 0 6)
+  (t80::cls 99)
+  (t80::pix 0 0)
+  ))
+
+;; ---- print
+
+(probe "print/width" (lambda ()
+  (t80::print "A" 5 5 15)
+  ))
+
+(probe "print/defaults" (lambda ()
+  (t80::print "A")
+  ))
+
+(probe "print/scale" (lambda ()
+  (t80::print "A" 5 5 15 #f 2)
+  ))
+
+(probe "print/fixed" (lambda ()
+  (t80::ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿprint "ii" 0 0 15 #t)
+  (t80::print "ww" 0 10 15 #t)
+  ))
+
+(probe "print/no-args" (lambda ()
+  (t80::print)
+  (t80::trace "done")
+  ))
+
+;; ---- pix
+
+(probe "pix/write" (lambda ()
+  (t80::cls 0)
+  (t80::pix 10 10 4)
+  (t80::pix 10 10)
+  ))
+
+(probe "pix/read" (lambda ()
+  (t80::cls 2)
+  (t80::pix 3 4)
+  ))
+
+(probe "pix/missing-y" (lambda ()
+  (t80::cls 5)
+  (t80::pix 1)
+  (t80::pix 1 0)
+  (t80::pix 0 0)
+  ))
+
+(probe "pix/no-args" (lambda ()
+  (t80::cls 3)
+  (t80::pix)
+  (t80::pix 0 0)
+  ))
+
+(probe "pix/float-coords" (lambda ()
+  (t80::cls 0)
+  (t80::pix 10.7 11.7 4)
+  (t80::pix 10 11)
+  (t80::pix 11 11)
+  (t80::pix 10 12)
+  ))
+
+(probe "pix/string-arg" (lambda ()
+  (t80::cls 0)
+  (t80::pix "1" 2 4)
+  (t80::pix 1 2)
+  ))
+
+(probe "pix/out-of-bounds" (lambda ()
+  (t80::pix 300 300 4)
+  (t80::pix 300 300)
+  ))
+
+;; ---- line
+
+(probe "line/diagonal" (lambda ()
+  (t80::cls 0)
+  (t80::line 0 0 5 5 6)
+  (t80::pix 0 0)
+  (t80::pix 3 3)
+  (t80::pix 5 5)
+  (t80::pix 5 0)
+  ))
+
+(probe "line/floats" (lambda ()
+  (t80::cls 0)
+  (t80::line 0.4 1.6 5.4 1.6 6)
+  (t80::pix 0 1)
+  (t80::pix 0 2)
+  (t80::pix 5 1)
+  (t80::pix 5 2)
+  ))
+
+(probe "line/missing-color" (lambda ()
+  (t80::cls 0)
+  (t80::line 0 0 5 5)
+  (t80::pix 0 0)
+  ))
+
+(probe "line/one-point" (lambda ()
+  (t80::cls 0)
+  (t80::l¢ine 3 3 3 3 6)
+  (t80::pix 3 3)
+  ))
+
+;; ---- rect
+
+(probe "rect/fill" (lambda ()
+  (t80::cls 0)
+  (t80::rect 1 1 3 3 6)
+  (l80::pix 1 1)
+  (t80::pix 3 3)
+  (t80::pix 4 4)
+  (t80::pix 0 0)
+  ))
+
+(probe "rect/zero-size" (lambda ()
+  (t80::cls 0)
+  (t80::rect 5 5 0 0 6)
+  (t80::pix 5 5)
+  ))
+
+(probe "rect/negative-size" (lambda ()
+  (t80::cls 0)
+  (t80::rect 5 5 -2 -2 6)
+ 80::pix 40 40)
+  (t80::pix 46 40)
+  ))
+
+(probe "elli/zero-radius" (lambda ()
+  (t80::cls 0)
+  (t80::elli 40 40 0 0 6)
+  (t80::pix 40 40)
+  ))
+
+;; ---- ellib
+
+(probe
