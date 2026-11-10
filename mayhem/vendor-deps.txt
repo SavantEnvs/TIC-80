@@ -1,0 +1,17 @@
+blip-buf https://github.com/nesbox/blip-buf.git 330226d9b55ecbeea644e17b5e0f096a165ca07e
+giflib https://github.com/nesbox/giflib.git 1aa11b06d0025eda77b56aec8254130654d4397b
+libpng https://github.com/glennrp/libpng.git ed217e3e601d8e462f7fd1e04bed43ac42212429
+zlib https://github.com/madler/zlib.git 51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf
+zip https://github.com/kuba--/zip.git 296ff2421b6bdb82575dd943fb8b5d7d5d443903
+lua https://github.com/lua/lua.git 75ea9ccbea7c4886f30da147fb67b693b2624c26
+quickjs https://github.com/quickjs-ng/quickjs.git 6d46d07d04041b40f4f49eaa7fdebe44c314c699
+squirrel https://github.com/albertodemichelis/squirrel.git c02bf2dfd599a0b99b814d486512a3ee934667f1
+wren https://github.com/wren-lang/wren.git 4a18fc489f9ea3d253b20dd40f4cdad0d6bb40eb
+janet https://github.com/janet-lang/janet.git e1963cdfe0148f83601907727e00bd672d798115
+moonscript https://github.com/nesbox/moonscript.git 17179283012b392bff972ad66231d73bfeec6e90
+lpeg https://github.com/roberto-ieru/LPeg.git 80ec9f932aa01d445e86c699523265359055e1bd
+pocketpy https://github.com/pocketpy/pocketpy.git 979addecf9cb180c59c16ac605ba75441ece5af6
+miniscript2 https://github.com/JoeStrout/miniscript2 a5a546a9960430aab31eb713f65bfe4a46b37c05
+lugforth https://github.com/luginf/lugforth.git 3ca1a779002747e2e44217251caa866f86cebe64
+jsmn https://github.com/zserge/jsmn.git 25647e692c7906b96ffd2b05ca54c097948e879c
+argparse https://github.com/cofyc/argparse.git 0d5f5d0745df14a3f373f7eed85bf524714f4524

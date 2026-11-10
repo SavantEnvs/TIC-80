@@ -1,0 +1,9 @@
+project: savantenvs/TIC-80
+target: fuzz_script_run
+testsuite:
+  - https://$MAYHEM_DOMAIN/$MAYHEM_PROJECT/$MAYHEM_TARGET/testsuite.tar
+  - file://mayhem/fuzz_script_run/testsuite
+cmds:
+  - cmd: /mayhem/fuzz_script_run
+    libfuzzer: true
+    timeout: 20
